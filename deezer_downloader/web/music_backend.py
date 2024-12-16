@@ -9,7 +9,8 @@ from deezer_downloader.configuration import config
 from deezer_downloader.youtubedl import youtubedl_download
 from deezer_downloader.spotify import get_songs_from_spotify_website
 from deezer_downloader.deezer import TYPE_TRACK, TYPE_ALBUM, TYPE_PLAYLIST, get_song_infos_from_deezer_website, \
-    download_song, parse_deezer_playlist, deezer_search, get_deezer_favorites, download_deezer_playlist_informations
+    download_song, parse_deezer_playlist, deezer_search, get_deezer_favorites, download_deezer_playlist_informations, \
+    download_deezer_favorite_informations
 from deezer_downloader.deezer import Deezer403Exception, Deezer404Exception
 
 from deezer_downloader.threadpool_queue import ThreadpoolScheduler, report_progress
@@ -78,6 +79,8 @@ def clean_filename(path):
 
 
 def download_song_and_get_absolute_filename(search_type, song, playlist_name=None):
+    itunes_library = config["download_dirs"]["itunes_library"] or None
+
     if search_type == TYPE_ALBUM:
         song_filename = "{:02d} - {} {}.mp3".format(int(song['TRACK_NUMBER']),
                                                     song['ART_NAME'],
@@ -108,7 +111,7 @@ def download_song_and_get_absolute_filename(search_type, song, playlist_name=Non
         print("Skipping song '{}'. Already exists.".format(absolute_filename))
     else:
         print("Downloading '{}'".format(song_filename))
-        download_song(song, absolute_filename)
+        download_song(song, absolute_filename, itunes_library)
     return absolute_filename
 
 
@@ -243,10 +246,16 @@ def download_youtubedl_and_queue(video_url, add_to_playlist):
 
 
 @sched.register_command()
-def download_deezer_favorites(user_id: str, add_to_playlist: bool, create_zip: bool):
+def download_deezer_favorites(user_id: str, add_to_playlist: bool, create_zip: bool, informations: bool = True):
     songs_absolute_location = []
     output_directory = f"favorites_{user_id}"
     favorite_songs = get_deezer_favorites(user_id)
+    if informations:
+        print(user_id, favorite_songs)
+        if not add_to_playlist and not create_zip:
+            absolute_filename = os.path.join(config["download_dirs"]["playlists"],
+                                             output_directory, "playlist_informations.json")
+            return download_deezer_favorite_informations(user_id, absolute_filename)
     for i, fav_song in enumerate(favorite_songs):
         report_progress(i, len(favorite_songs))
         try:

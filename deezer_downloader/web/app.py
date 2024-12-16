@@ -270,3 +270,21 @@ def deezer_favorites_download():
                               add_to_playlist=user_input['add_to_playlist'],
                               create_zip=user_input['create_zip'])
     return jsonify({"task_id": id(task), })
+
+
+@app.route('/favorites/deezer/infos', methods=['POST'])
+@validate_schema("user_id")
+def deezer_favorites_informations():
+    """
+    get the json of a public Deezer playlist.
+    A directory with the name of the playlist will be created.
+    para:
+        playlist_url: link to a public Deezer playlist (the id of the playlist works too)
+    """
+    user_input = request.get_json(force=True)
+    desc = "Getting informations on Deezer favorite playlist"
+    task = sched.enqueue_task(desc, "download_deezer_favorites",
+                              user_id=user_input['user_id'],
+                              add_to_playlist=False,
+                              create_zip=False)
+    return jsonify({"task_id": id(task), })

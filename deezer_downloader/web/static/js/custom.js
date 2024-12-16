@@ -74,7 +74,7 @@ $(document).ready(function() {
             });
     }
 
-        function deezer_playlist_informations() {
+    function deezer_playlist_informations() {
         $.post(deezer_downloader_api_root + '/playlist/deezer/infos',
             JSON.stringify({ playlist_url: $('#deezer-playlist-url').val() }),
             function(data) {
@@ -89,6 +89,15 @@ $(document).ready(function() {
             JSON.stringify({ user_id: $('#deezer-favorites-userid').val(),
                              add_to_playlist: add_to_playlist,
                              create_zip: create_zip}),
+            function(data) {
+                console.log(data);
+                $.jGrowl("As you wish", { life: 4000 });
+            });
+    }
+
+    function deezer_favorites_informations() {
+        $.post(deezer_downloader_api_root + '/favorites/deezer/infos',
+            JSON.stringify({ user_id: $('#deezer-favorites-userid').val() }),
             function(data) {
                 console.log(data);
                 $.jGrowl("As you wish", { life: 4000 });
@@ -244,6 +253,14 @@ $(document).ready(function() {
 
     $("#deezer_favorites_zip").click(function() {
         deezer_favorites_download(false, true);
+    });
+
+    $("#deezer_favorites_infos").click(function() {
+        deezer_favorites_informations();
+    });
+
+    $("#deezer_favorites_update").click(function() {
+        deezer_favorites_update(false);
     });
     // END DEEZER FAVORITE SONGS
 

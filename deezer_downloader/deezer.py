@@ -1,3 +1,4 @@
+import os
 import sys
 import re
 import json
@@ -323,12 +324,27 @@ def writeid3v2(fo, song):
     fo.write(id3data)
 
 
-def download_song(song, output_file):
+def add_to_itunes_with_hardlink(file_path, itunes_library):
+    """Ajoute un fichier audio à la bibliothèque Musique via un hardlink"""
+    try:
+        dest_path = os.path.join(itunes_library, os.path.basename(file_path))
+
+        # Creates hardlink
+        print(f"Creating hardlink: {file_path} → {dest_path}")
+        os.link(file_path, dest_path)
+    except FileExistsError as e:
+        print(f"File {itunes_library} already exists!")
+    except Exception as e:
+        print(f"Error while creating hardlink for {file_path}: {e}. Ignoring.")
+
+
+def download_song(song, output_file, itunes_library=None):
     # downloads and decrypts the song from Deezer. Adds ID3 and art cover
     # song: dict with information of the song (grabbed from Deezer.com)
     # output_file: absolute file name of the output file
     assert type(song) == dict, "song must be a dict"
     assert type(output_file) == str, "output_file must be a str"
+    assert type(itunes_library) == str, "music library must be a str"
 
     song_quality = 3 if song.get("FILESIZE_MP3_320") and song.get("FILESIZE_MP3_320") != '0' else \
                    5 if song.get("FILESIZE_MP3_256") and song.get("FILESIZE_MP3_256") != '0' else \
@@ -354,6 +370,12 @@ def download_song(song, output_file):
             writeid3v2(fo, song)
             decryptfile(fh, key, fo)
             writeid3v1_1(fo, song)
+
+        if itunes_library:
+            print("Found Music Library!", itunes_library)
+            add_to_itunes_with_hardlink(output_file, itunes_library)
+        else:
+            print("Music Library not found...", itunes_library)
 
     except Exception as e:
         raise
@@ -526,6 +548,22 @@ def parse_deezer_playlist(playlist_id):
 
     print("Got {} songs from API".format(json_data['SONGS']['count']))
     return playlist_name, json_data['SONGS']['data']
+
+
+def download_deezer_favorite_informations(user_id: str, output_file):
+    if not user_id.isnumeric():
+        raise Exception(f"User id '{user_id}' must be numeric")
+    resp = session.get(f"https://api.deezer.com/user/{user_id}/tracks?limit=10000000000")
+    assert resp.status_code == 200, f"got invalid status asking for favorite song\n{resp.text}s"
+    resp_json = resp.json()
+    if "error" in resp_json.keys():
+        raise Exception(f"Upstream api error getting favorite songs for user {user_id}:\n{resp_json['error']}")
+    # check is set next
+
+    with open(output_file, "w") as f:
+        print("Writing information file downloaded from Deezer.")
+        json.dump(resp_json, f, indent=4)
+    return json.dumps(resp_json, indent=4)
 
 
 def get_deezer_favorites(user_id: str) -> Optional[Sequence[int]]:
