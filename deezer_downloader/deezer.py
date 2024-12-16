@@ -361,6 +361,47 @@ def download_song(song, output_file):
         print("Dowload finished: {}".format(output_file))
 
 
+def download_deezer_playlist_informations(playlist_id, output_file):
+    # downloads and decrypts the song from Deezer. Adds ID3 and art cover
+    # playlist_id: id of the playlist or the url of it
+    # output_file: absolute file name of the output file
+    assert type(output_file) == str, "output_file must be a str"
+
+    try:
+        playlist_id = re.search(r'\d+', playlist_id).group(0)
+    except AttributeError:
+        raise DeezerApiException("ERROR: Regex (\\d+) for playlist_id failed. You gave me '{}'".format(playlist_id))
+
+    url_get_csrf_token = "https://www.deezer.com/ajax/gw-light.php?method=deezer.getUserData&input=3&api_version=1.0&api_token="
+    req = session.post(url_get_csrf_token)
+    csrf_token = req.json()['results']['checkForm']
+
+    url_get_playlist_songs = "https://www.deezer.com/ajax/gw-light.php?method=deezer.pagePlaylist&input=3&api_version=1.0&api_token={}".format(csrf_token)
+    data = {'playlist_id': int(playlist_id),
+            'start': 0,
+            'tab': 0,
+            'header': True,
+            'lang': 'de',
+            'nb': 500}
+    req = session.post(url_get_playlist_songs, json=data)
+    req_json = req.json()
+
+    if len(req_json['error']) > 0:
+        raise DeezerApiException("ERROR: deezer api said {}".format(req_json['error']))
+    json_data = req_json['results']
+
+    playlist_name = json_data['DATA']['TITLE']
+    number_songs = json_data['DATA']['NB_SONG']
+    print("Playlist '{}' has {} songs".format(playlist_name, number_songs))
+
+    print("Got {} songs from API".format(json_data['SONGS']['count']))
+
+    with open(output_file, "w") as f:
+        print("Writing information file downloaded from Deezer.")
+        json.dump(req_json, f, indent=4)
+    return json.dumps(json_data, indent=4)
+
+
 def get_song_infos_from_deezer_website(search_type, id):
     # search_type: either one of the constants: TYPE_TRACK|TYPE_ALBUM|TYPE_PLAYLIST
     # id: deezer_id of the song/album/playlist (like https://www.deezer.com/de/track/823267272)

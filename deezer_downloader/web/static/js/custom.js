@@ -73,6 +73,15 @@ $(document).ready(function() {
                 $.jGrowl("As you wish", { life: 4000 });
             });
     }
+
+        function deezer_playlist_informations() {
+        $.post(deezer_downloader_api_root + '/playlist/deezer/infos',
+            JSON.stringify({ playlist_url: $('#deezer-playlist-url').val() }),
+            function(data) {
+                console.log(data);
+                $.jGrowl("As you wish", { life: 4000 });
+            });
+    }
     
 
     function deezer_favorites_download(add_to_playlist, create_zip) {
@@ -217,6 +226,10 @@ $(document).ready(function() {
 
     $("#deezer_playlist_zip").click(function() {
         deezer_playlist_download(false, true);
+    });
+
+    $("#deezer_playlist_infos").click(function() {
+        deezer_playlist_informations();
     });
     // END DEEZER PLAYLIST
 

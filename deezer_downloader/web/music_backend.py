@@ -8,7 +8,8 @@ from zipfile import ZipFile, ZIP_DEFLATED
 from deezer_downloader.configuration import config
 from deezer_downloader.youtubedl import youtubedl_download
 from deezer_downloader.spotify import get_songs_from_spotify_website
-from deezer_downloader.deezer import TYPE_TRACK, TYPE_ALBUM, TYPE_PLAYLIST, get_song_infos_from_deezer_website, download_song, parse_deezer_playlist, deezer_search, get_deezer_favorites
+from deezer_downloader.deezer import TYPE_TRACK, TYPE_ALBUM, TYPE_PLAYLIST, get_song_infos_from_deezer_website, \
+    download_song, parse_deezer_playlist, deezer_search, get_deezer_favorites, download_deezer_playlist_informations
 from deezer_downloader.deezer import Deezer403Exception, Deezer404Exception
 
 from deezer_downloader.threadpool_queue import ThreadpoolScheduler, report_progress
@@ -111,6 +112,29 @@ def download_song_and_get_absolute_filename(search_type, song, playlist_name=Non
     return absolute_filename
 
 
+def download_informations_and_get_absolute_filename(search_type, playlist_id="", playlist_name=None):
+    if search_type == TYPE_TRACK:
+        absolute_filename = config["download_dirs"]["songs"]
+    elif search_type == TYPE_ALBUM:
+        album_dir = config["download_dirs"]["albums"]
+        if not os.path.exists(album_dir):
+            os.mkdir(album_dir)
+        absolute_filename = os.path.join(album_dir, "album_informations.json")
+    elif search_type == TYPE_PLAYLIST:
+        playlist_name = clean_filename(playlist_name)
+        playlist_dir = os.path.join(config["download_dirs"]["playlists"], playlist_name)
+        if not os.path.exists(playlist_dir):
+            os.mkdir(playlist_dir)
+        absolute_filename = os.path.join(playlist_dir, "playlist_informations.json")
+
+        if os.path.exists(absolute_filename):
+            print("New informations found about '{}'. Updating.".format(absolute_filename))
+        else:
+            print("Downloading informations about '{}'".format(absolute_filename))
+        download_deezer_playlist_informations(playlist_id, absolute_filename)
+    return absolute_filename
+
+
 def create_zip_file(songs_absolute_location):
     # take first song in list and take the parent dir (name of album/playlist")
     parent_dir = basename(os.path.dirname(songs_absolute_location[0]))
@@ -166,8 +190,12 @@ def download_deezer_album_and_queue_and_zip(album_id, add_to_playlist, create_zi
 
 
 @sched.register_command()
-def download_deezer_playlist_and_queue_and_zip(playlist_id, add_to_playlist, create_zip):
+def download_deezer_playlist_and_queue_and_zip(playlist_id, add_to_playlist, create_zip, informations=True):
     playlist_name, songs = parse_deezer_playlist(playlist_id)
+    if informations:
+        print(playlist_name, songs)
+        if not add_to_playlist and not create_zip:
+            return download_informations_and_get_absolute_filename(TYPE_PLAYLIST, playlist_id, playlist_name)
     songs_absolute_location = []
     for i, song in enumerate(songs):
         report_progress(i, len(songs))
@@ -177,7 +205,7 @@ def download_deezer_playlist_and_queue_and_zip(playlist_id, add_to_playlist, cre
     songs_with_m3u8_file = create_m3u8_file(songs_absolute_location)
     if create_zip:
         return [create_zip_file(songs_with_m3u8_file)]
-    return make_song_paths_relative_to_mpd_root(songs_absolute_location)
+    return (songs_absolute_location)
 
 
 @sched.register_command()

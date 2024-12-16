@@ -209,6 +209,25 @@ def deezer_playlist_download():
     return jsonify({"task_id": id(task), })
 
 
+@app.route('/playlist/deezer/infos', methods=['POST'])
+@validate_schema("playlist_url")
+def deezer_playlist_informations():
+    """
+    get the json of a public Deezer playlist.
+    A directory with the name of the playlist will be created.
+    para:
+        playlist_url: link to a public Deezer playlist (the id of the playlist works too)
+    """
+    user_input = request.get_json(force=True)
+    desc = "Getting informations on Deezer playlist"
+    task = sched.enqueue_task(desc, "download_deezer_playlist_and_queue_and_zip",
+                              playlist_id=user_input['playlist_url'],
+                              add_to_playlist=False,
+                              create_zip=False,
+                              informations=True)
+    return jsonify({"task_id": id(task), })
+
+
 @app.route('/playlist/spotify', methods=['POST'])
 @validate_schema("playlist_name", "playlist_url", "add_to_playlist", "create_zip")
 def spotify_playlist_download():
