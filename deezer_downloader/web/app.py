@@ -272,6 +272,19 @@ def deezer_favorites_download():
     return jsonify({"task_id": id(task), })
 
 
+@app.route('/favorites/deezer/update', methods=['POST'])
+@validate_schema("user_id")
+def deezer_favorites_update():
+    user_input = request.get_json(force=True)
+    desc = "Getting informations on Deezer favorite playlist"
+    task = sched.enqueue_task(desc, "download_deezer_favorites",
+                              user_id=user_input['user_id'],
+                              add_to_playlist=True,
+                              create_zip=False,
+                              update=True)
+    return jsonify({"task_id": id(task), })
+
+
 @app.route('/favorites/deezer/infos', methods=['POST'])
 @validate_schema("user_id")
 def deezer_favorites_informations():

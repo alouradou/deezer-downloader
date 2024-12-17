@@ -104,6 +104,15 @@ $(document).ready(function() {
             });
     }
 
+    function deezer_favorites_update() {
+        $.post(deezer_downloader_api_root + '/favorites/deezer/update',
+            JSON.stringify({ user_id: $('#deezer-favorites-userid').val() }),
+            function(data) {
+                console.log(data);
+                $.jGrowl("As you wish", { life: 4000 });
+            });
+    }
+
 
     function search(type) {
         deezer_load_list(type, $('#songs-albums-query').val());

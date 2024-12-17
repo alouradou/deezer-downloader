@@ -435,7 +435,7 @@ def get_song_infos_from_deezer_website(search_type, id):
     # 2. Deezer gives you a 404: https://www.deezer.com/de/track/68925038
     # Deezer403Exception if we are not logged in
 
-    url = "https://www.deezer.com/de/{}/{}".format(search_type, id)
+    url = "https://www.deezer.com/us/{}/{}".format(search_type, id)
     resp = session.get(url)
     if resp.status_code == 404:
         raise Deezer404Exception("ERROR: Got a 404 for {} from Deezer".format(url))
@@ -563,7 +563,12 @@ def download_deezer_favorite_informations(user_id: str, output_file):
     with open(output_file, "w") as f:
         print("Writing information file downloaded from Deezer.")
         json.dump(resp_json, f, indent=4)
-    return json.dumps(resp_json, indent=4)
+    return resp_json
+
+
+def load_deezer_favorite_informations(absolute_filename):
+    with open(absolute_filename, "r", encoding="utf-8") as f:
+        return json.load(f)
 
 
 def get_deezer_favorites(user_id: str) -> Optional[Sequence[int]]:

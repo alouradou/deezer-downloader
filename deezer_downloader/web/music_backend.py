@@ -10,7 +10,7 @@ from deezer_downloader.youtubedl import youtubedl_download
 from deezer_downloader.spotify import get_songs_from_spotify_website
 from deezer_downloader.deezer import TYPE_TRACK, TYPE_ALBUM, TYPE_PLAYLIST, get_song_infos_from_deezer_website, \
     download_song, parse_deezer_playlist, deezer_search, get_deezer_favorites, download_deezer_playlist_informations, \
-    download_deezer_favorite_informations
+    download_deezer_favorite_informations, load_deezer_favorite_informations
 from deezer_downloader.deezer import Deezer403Exception, Deezer404Exception
 
 from deezer_downloader.threadpool_queue import ThreadpoolScheduler, report_progress
@@ -138,6 +138,37 @@ def download_informations_and_get_absolute_filename(search_type, playlist_id="",
     return absolute_filename
 
 
+def compare_existing_json_file(user_id, absolute_filename):
+    playlist_dir = os.path.dirname(absolute_filename)
+    if not os.path.exists(absolute_filename):
+        print(f"The file {absolute_filename} doesn't exist. Getting informations.")
+        if not os.path.exists(playlist_dir):
+            os.mkdir(playlist_dir)
+        resp_playlist_file = download_deezer_favorite_informations(user_id, absolute_filename)
+        data_to_download = [item for item in resp_playlist_file.get("data", [])]
+    else:
+        # Load the old file at absolute_filename path and put it in a dictionary
+        prev_playlist_file = load_deezer_favorite_informations(absolute_filename)
+        prev_ids = {item['id'] for item in prev_playlist_file.get("data", [])}
+
+        # Download the new information about the playlist
+        resp_playlist_file = download_deezer_favorite_informations(user_id, absolute_filename)
+        resp_ids = {item['id'] for item in resp_playlist_file.get("data", [])}
+
+        data_to_download = [
+            item for item in resp_playlist_file.get("data", [])
+            if item["id"] in (resp_ids - prev_ids)
+        ]
+
+    print(f"Favorite playlist differ with {len(data_to_download)} new songs.")
+
+    resp_json = {
+        "data": data_to_download,
+        "total": len(data_to_download)
+    }
+    return [song['id'] for song in resp_json['data']]
+
+
 def create_zip_file(songs_absolute_location):
     # take first song in list and take the parent dir (name of album/playlist")
     parent_dir = basename(os.path.dirname(songs_absolute_location[0]))
@@ -246,16 +277,20 @@ def download_youtubedl_and_queue(video_url, add_to_playlist):
 
 
 @sched.register_command()
-def download_deezer_favorites(user_id: str, add_to_playlist: bool, create_zip: bool, informations: bool = True):
+def download_deezer_favorites(user_id: str, add_to_playlist: bool, create_zip: bool,
+                              informations: bool = True, update: bool = False):
     songs_absolute_location = []
     output_directory = f"favorites_{user_id}"
     favorite_songs = get_deezer_favorites(user_id)
     if informations:
-        print(user_id, favorite_songs)
+        absolute_filename = os.path.join(config["download_dirs"]["playlists"],
+                                         output_directory, "playlist_informations.json")
         if not add_to_playlist and not create_zip:
-            absolute_filename = os.path.join(config["download_dirs"]["playlists"],
-                                             output_directory, "playlist_informations.json")
             return download_deezer_favorite_informations(user_id, absolute_filename)
+        elif update and add_to_playlist:
+            favorite_songs = compare_existing_json_file(user_id, absolute_filename)
+            if not favorite_songs:
+                return
     for i, fav_song in enumerate(favorite_songs):
         report_progress(i, len(favorite_songs))
         try:
