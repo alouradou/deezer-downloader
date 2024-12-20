@@ -224,7 +224,7 @@ def download_deezer_album_and_queue_and_zip(album_id, add_to_playlist, create_zi
 
 
 @sched.register_command()
-def download_deezer_playlist_and_queue_and_zip(playlist_id, add_to_playlist, create_zip, informations=True):
+def download_deezer_playlist_and_queue_and_zip(playlist_id, add_to_playlist, create_zip, informations=False):
     playlist_name, songs = parse_deezer_playlist(playlist_id)
     if informations:
         print(playlist_name, songs)
