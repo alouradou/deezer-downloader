@@ -109,6 +109,8 @@ def download_song_and_get_absolute_filename(search_type, song, playlist_name=Non
 
     if os.path.exists(absolute_filename):
         print("Skipping song '{}'. Already exists.".format(absolute_filename))
+    if os.path.exists(absolute_filename.replace('.mp3', '.flac')):
+        print("Skipping song '{}'. Already exists.".format(absolute_filename.replace('.mp3', '.flac')))
     else:
         print("Downloading '{}'".format(song_filename))
         download_song(song, absolute_filename, itunes_library)
@@ -239,7 +241,7 @@ def download_deezer_playlist_and_queue_and_zip(playlist_id, add_to_playlist, cre
     songs_with_m3u8_file = create_m3u8_file(songs_absolute_location)
     if create_zip:
         return [create_zip_file(songs_with_m3u8_file)]
-    return (songs_absolute_location)
+    return make_song_paths_relative_to_mpd_root(songs_absolute_location)
 
 
 @sched.register_command()
