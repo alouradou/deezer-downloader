@@ -330,12 +330,12 @@ def add_to_itunes_with_hardlink(file_path, itunes_library):
         dest_path = os.path.join(itunes_library, os.path.basename(file_path))
 
         # Creates hardlink
-        print(f"Creating hardlink: {file_path} → {dest_path}")
+        print(f"Creating link: {file_path} → {dest_path}")
         os.link(file_path, dest_path)
     except FileExistsError as e:
         print(f"File {itunes_library} already exists!")
     except Exception as e:
-        print(f"Error while creating hardlink for {file_path}: {e}. Ignoring.")
+        print(f"Error while creating link for {file_path}: {e}. Ignoring.")
 
 
 def download_song(song, output_file, itunes_library=None):
@@ -380,7 +380,7 @@ def download_song(song, output_file, itunes_library=None):
     except Exception as e:
         raise
     else:
-        print("Dowload finished: {}".format(output_file))
+        print("Download finished: {}".format(output_file))
 
 
 def download_deezer_playlist_informations(playlist_id, output_file):
