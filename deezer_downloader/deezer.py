@@ -1,3 +1,4 @@
+import os
 import sys
 import re
 import json
@@ -361,7 +362,6 @@ def download_song(song, output_file, itunes_library=None):
     # output_file: absolute file name of the output file
     assert type(song) == dict, "song must be a dict"
     assert type(output_file) == str, "output_file must be a str"
-    assert type(itunes_library) == str, "music library must be a str"
 
     if license_token and web_sound_quality.get('lossless'):
         song, url, extension = get_song_url(song)
