@@ -325,7 +325,7 @@ def writeid3v2(fo, song):
 
 
 def add_to_itunes_with_hardlink(file_path, itunes_library):
-    """Ajoute un fichier audio à la bibliothèque Musique via un hardlink"""
+    """Add an audio file to Music Library via hardlink"""
     try:
         dest_path = os.path.join(itunes_library, os.path.basename(file_path))
 

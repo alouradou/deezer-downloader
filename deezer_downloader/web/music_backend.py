@@ -278,7 +278,7 @@ def download_youtubedl_and_queue(video_url, add_to_playlist):
 
 @sched.register_command()
 def download_deezer_favorites(user_id: str, add_to_playlist: bool, create_zip: bool,
-                              informations: bool = True, update: bool = False):
+                              informations: bool = False, update: bool = False):
     songs_absolute_location = []
     output_directory = f"favorites_{user_id}"
     favorite_songs = get_deezer_favorites(user_id)
