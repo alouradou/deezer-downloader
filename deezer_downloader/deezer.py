@@ -631,7 +631,6 @@ def get_user_data():
             'https://www.deezer.com/ajax/gw-light.php?method=deezer.getUserData&input=3&api_version=1.0&api_token=')
         user_data_json = user_data.json()['results']
         options = user_data_json['USER']['OPTIONS']
-        web_sound_quality = options['web_sound_quality']
         license_token = options.get('license_token')
         return user_data_json
 
@@ -665,7 +664,9 @@ def get_song_url(song, i=0):
             ],
             "track_tokens": [track_token]
         }
-        r = session.post("https://media.deezer.com/v1/get_url", data=json.dumps(body))
+        r = session.post("https://media.deezer.com/v1/get_url",
+                         data=json.dumps(body),
+                         headers={'accept-encoding': 'gzip, deflate, utf-8'})
         data = r.json()
         if not data['data'][0].get('media'):
             print(data)
