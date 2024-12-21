@@ -395,7 +395,6 @@ def download_song(song, output_file, itunes_library=None):
             writeid3v1_1(fo, song)
 
         if itunes_library:
-            print("Found Music Library!", itunes_library)
             add_to_itunes_with_hardlink(output_file, itunes_library)
         else:
             print("Music Library not found...", itunes_library)
