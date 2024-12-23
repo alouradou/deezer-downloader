@@ -443,7 +443,7 @@ def download_deezer_playlist_informations(playlist_id, output_file):
     with open(output_file, "w") as f:
         print("Writing information file downloaded from Deezer.")
         json.dump(req_json, f, indent=4)
-    return json.dumps(json_data, indent=4)
+    return json_data
 
 
 def get_song_infos_from_deezer_website(search_type, id):
@@ -589,7 +589,7 @@ def download_deezer_favorite_informations(user_id: str, output_file):
     return resp_json
 
 
-def load_deezer_favorite_informations(absolute_filename):
+def load_deezer_json_informations(absolute_filename):
     with open(absolute_filename, "r", encoding="utf-8") as f:
         return json.load(f)
 

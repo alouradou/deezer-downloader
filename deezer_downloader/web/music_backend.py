@@ -10,7 +10,7 @@ from deezer_downloader.youtubedl import youtubedl_download
 from deezer_downloader.spotify import get_songs_from_spotify_website
 from deezer_downloader.deezer import TYPE_TRACK, TYPE_ALBUM, TYPE_PLAYLIST, get_song_infos_from_deezer_website, \
     download_song, parse_deezer_playlist, deezer_search, get_deezer_favorites, download_deezer_playlist_informations, \
-    download_deezer_favorite_informations, load_deezer_favorite_informations
+    download_deezer_favorite_informations, load_deezer_json_informations
 from deezer_downloader.deezer import Deezer403Exception, Deezer404Exception
 
 from deezer_downloader.threadpool_queue import ThreadpoolScheduler, report_progress
@@ -140,7 +140,7 @@ def download_informations_and_get_absolute_filename(search_type, playlist_id="",
     return absolute_filename
 
 
-def compare_existing_json_file(user_id, absolute_filename):
+def compare_existing_favorite_json_file(user_id, absolute_filename):
     playlist_dir = os.path.dirname(absolute_filename)
     if not os.path.exists(absolute_filename):
         print(f"The file {absolute_filename} doesn't exist. Getting informations.")
@@ -150,7 +150,7 @@ def compare_existing_json_file(user_id, absolute_filename):
         data_to_download = [item for item in resp_playlist_file.get("data", [])]
     else:
         # Load the old file at absolute_filename path and put it in a dictionary
-        prev_playlist_file = load_deezer_favorite_informations(absolute_filename)
+        prev_playlist_file = load_deezer_json_informations(absolute_filename)
         prev_ids = {item['id'] for item in prev_playlist_file.get("data", [])}
 
         # Download the new information about the playlist
@@ -163,6 +163,37 @@ def compare_existing_json_file(user_id, absolute_filename):
         ]
 
     print(f"Favorite playlist differ with {len(data_to_download)} new songs.")
+
+    resp_json = {
+        "data": data_to_download,
+        "total": len(data_to_download)
+    }
+    return [song['id'] for song in resp_json['data']]
+
+
+def compare_existing_playlist_json_file(playlist_id, absolute_filename):
+    playlist_dir = os.path.dirname(absolute_filename)
+    if not os.path.exists(absolute_filename):
+        print(f"The file {absolute_filename} doesn't exist. Getting informations.")
+        if not os.path.exists(playlist_dir):
+            os.mkdir(playlist_dir)
+        resp_playlist_file = download_deezer_playlist_informations(playlist_id, absolute_filename)
+        data_to_download = [item for item in resp_playlist_file.get("data", [])]
+    else:
+        # Load the old file at absolute_filename path and put it in a dictionary
+        prev_playlist_file = load_deezer_json_informations(absolute_filename)
+        prev_ids = {item['id'] for item in prev_playlist_file.get("data", [])}
+
+        # Download the new information about the playlist
+        resp_playlist_file = download_deezer_playlist_informations(playlist_id, absolute_filename)
+        resp_ids = {item['id'] for item in resp_playlist_file.get("data", [])}
+
+        data_to_download = [
+            item for item in resp_playlist_file.get("data", [])
+            if item["id"] in (resp_ids - prev_ids)
+        ]
+
+    print(f"Playlist differ with {len(data_to_download)} new songs.")
 
     resp_json = {
         "data": data_to_download,
@@ -226,12 +257,19 @@ def download_deezer_album_and_queue_and_zip(album_id, add_to_playlist, create_zi
 
 
 @sched.register_command()
-def download_deezer_playlist_and_queue_and_zip(playlist_id, add_to_playlist, create_zip, informations=False):
+def download_deezer_playlist_and_queue_and_zip(playlist_id, add_to_playlist, create_zip,
+                                               informations=False, update=False):
     playlist_name, songs = parse_deezer_playlist(playlist_id)
     if informations:
-        print(playlist_name, songs)
+        absolute_filename = os.path.join(config["download_dirs"]["playlists"],
+                                         playlist_name, "playlist_informations.json")
         if not add_to_playlist and not create_zip:
             return download_informations_and_get_absolute_filename(TYPE_PLAYLIST, playlist_id, playlist_name)
+        elif update and add_to_playlist:
+            songs = compare_existing_playlist_json_file(playlist_id, absolute_filename)
+            print("SONGS", songs)
+            if not songs:
+                return
     songs_absolute_location = []
     for i, song in enumerate(songs):
         report_progress(i, len(songs))
@@ -290,7 +328,7 @@ def download_deezer_favorites(user_id: str, add_to_playlist: bool, create_zip: b
         if not add_to_playlist and not create_zip:
             return download_deezer_favorite_informations(user_id, absolute_filename)
         elif update and add_to_playlist:
-            favorite_songs = compare_existing_json_file(user_id, absolute_filename)
+            favorite_songs = compare_existing_favorite_json_file(user_id, absolute_filename)
             if not favorite_songs:
                 return
     for i, fav_song in enumerate(favorite_songs):

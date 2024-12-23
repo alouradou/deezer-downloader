@@ -209,6 +209,20 @@ def deezer_playlist_download():
     return jsonify({"task_id": id(task), })
 
 
+@app.route('/playlist/deezer/update', methods=['POST'])
+@validate_schema("playlist_url")
+def deezer_playlist_update():
+    user_input = request.get_json(force=True)
+    desc = "Update existing Deezer playlist"
+    task = sched.enqueue_task(desc, "download_deezer_playlist_and_queue_and_zip",
+                              playlist_id=user_input['playlist_url'],
+                              add_to_playlist=True,
+                              create_zip=False,
+                              informations=True,
+                              update=True)
+    return jsonify({"task_id": id(task), })
+
+
 @app.route('/playlist/deezer/infos', methods=['POST'])
 @validate_schema("playlist_url")
 def deezer_playlist_informations():
