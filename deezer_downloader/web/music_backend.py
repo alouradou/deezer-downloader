@@ -178,20 +178,23 @@ def compare_existing_playlist_json_file(playlist_id, absolute_filename):
         if not os.path.exists(playlist_dir):
             os.mkdir(playlist_dir)
         resp_playlist_file = download_deezer_playlist_informations(playlist_id, absolute_filename)
-        data_to_download = [item for item in resp_playlist_file.get("data", [])]
+        data_to_download = [item for item in resp_playlist_file.get("SONGS", {}).get("data", [])]
     else:
         # Load the old file at absolute_filename path and put it in a dictionary
         prev_playlist_file = load_deezer_json_informations(absolute_filename)
-        prev_ids = {item['id'] for item in prev_playlist_file.get("data", [])}
+        prev_ids = {item['SNG_ID'] for item in prev_playlist_file.get("results", {})
+                                                                 .get("SONGS", {}).get("data", [])}
 
         # Download the new information about the playlist
         resp_playlist_file = download_deezer_playlist_informations(playlist_id, absolute_filename)
-        resp_ids = {item['id'] for item in resp_playlist_file.get("data", [])}
+        resp_ids = {item['SNG_ID'] for item in resp_playlist_file.get("SONGS", {}).get("data", [])}
 
         data_to_download = [
-            item for item in resp_playlist_file.get("data", [])
-            if item["id"] in (resp_ids - prev_ids)
+            item for item in resp_playlist_file.get("SONGS", {}).get("data", [])
+            if item["SNG_ID"] in (resp_ids - prev_ids)
         ]
+
+    print("DATA TO DOWNLOAD", data_to_download)
 
     print(f"Playlist differ with {len(data_to_download)} new songs.")
 
@@ -199,7 +202,7 @@ def compare_existing_playlist_json_file(playlist_id, absolute_filename):
         "data": data_to_download,
         "total": len(data_to_download)
     }
-    return [song['id'] for song in resp_json['data']]
+    return [song for song in resp_json['data']]
 
 
 def create_zip_file(songs_absolute_location):
@@ -260,6 +263,7 @@ def download_deezer_album_and_queue_and_zip(album_id, add_to_playlist, create_zi
 def download_deezer_playlist_and_queue_and_zip(playlist_id, add_to_playlist, create_zip,
                                                informations=False, update=False):
     playlist_name, songs = parse_deezer_playlist(playlist_id)
+    print("SONGS", songs)
     if informations:
         absolute_filename = os.path.join(config["download_dirs"]["playlists"],
                                          playlist_name, "playlist_informations.json")
