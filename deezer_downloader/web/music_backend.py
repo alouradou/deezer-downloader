@@ -194,8 +194,6 @@ def compare_existing_playlist_json_file(playlist_id, absolute_filename):
             if item["SNG_ID"] in (resp_ids - prev_ids)
         ]
 
-    print("DATA TO DOWNLOAD", data_to_download)
-
     print(f"Playlist differ with {len(data_to_download)} new songs.")
 
     resp_json = {
@@ -263,7 +261,6 @@ def download_deezer_album_and_queue_and_zip(album_id, add_to_playlist, create_zi
 def download_deezer_playlist_and_queue_and_zip(playlist_id, add_to_playlist, create_zip,
                                                informations=False, update=False):
     playlist_name, songs = parse_deezer_playlist(playlist_id)
-    print("SONGS", songs)
     if informations:
         absolute_filename = os.path.join(config["download_dirs"]["playlists"],
                                          playlist_name, "playlist_informations.json")
@@ -271,7 +268,6 @@ def download_deezer_playlist_and_queue_and_zip(playlist_id, add_to_playlist, cre
             return download_informations_and_get_absolute_filename(TYPE_PLAYLIST, playlist_id, playlist_name)
         elif update and add_to_playlist:
             songs = compare_existing_playlist_json_file(playlist_id, absolute_filename)
-            print("SONGS", songs)
             if not songs:
                 return
     songs_absolute_location = []

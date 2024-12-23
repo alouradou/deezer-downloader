@@ -425,8 +425,9 @@ def download_deezer_playlist_informations(playlist_id, output_file):
             'start': 0,
             'tab': 0,
             'header': True,
-            'lang': 'de',
-            'nb': 500}
+            'lang': 'en',
+            'nb': 10000}
+    print("Downloading playlist information from Deezer API", data)
     req = session.post(url_get_playlist_songs, json=data)
     req_json = req.json()
 
@@ -556,8 +557,8 @@ def parse_deezer_playlist(playlist_id):
             'start': 0,
             'tab': 0,
             'header': True,
-            'lang': 'de',
-            'nb': 500}
+            'lang': 'en',
+            'nb': 10000}
     req = session.post(url_get_playlist_songs, json=data)
     json = req.json()
 
