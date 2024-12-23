@@ -281,6 +281,7 @@ def deezer_favorites_update():
                               user_id=user_input['user_id'],
                               add_to_playlist=True,
                               create_zip=False,
+                              informations=True,
                               update=True)
     return jsonify({"task_id": id(task), })
 
