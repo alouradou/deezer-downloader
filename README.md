@@ -2,6 +2,20 @@
 [![tests](https://github.com/kmille/deezer-downloader/actions/workflows/tests.yaml/badge.svg)](https://github.com/kmille/deezer-downloader/actions/workflows/tests.yaml)
 ![latest tag](https://img.shields.io/github/v/tag/kmille/deezer-downloader?sort=semver) ![Python 3.9](https://img.shields.io/badge/python-%3E=3.9-blue.svg) ![pypi-version](https://img.shields.io/pypi/v/deezer-downloader) ![pypi-downloads](https://img.shields.io/pypi/dm/deezer-downloader)
 
+
+## Download Loved Tracks from Deezer
+
+1. (Optional) Paste the `arl` cookie of your Deezer account into the settings.ini file
+2. `poetry run deezer-downloader --config settings.ini`
+3. Open http://localhost:5000
+4. Go to Deezer (4)
+5. Paste 'Loved Tracks Extension' playlist link (`https://www.deezer.com/us/playlist/13351633783`)
+6. Download the playlist with 'Download' (it will skip already downloaded songs)
+7. Paste user id in Favorite songs field (`911902911`)
+8. Click 'Update existing playlist' to add the songs to the playlist
+9. Go to iTunes and delete duplicates (Files > Library > Show Duplicate Items)
+10. Enjoy your music in iTunes!
+
 ### Download music from Deezer and Spotify with a simple web frontend, through a local-hosted service written in Python.
 
 ### Features

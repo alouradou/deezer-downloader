@@ -70,6 +70,14 @@ class TestDeezerMethods(unittest.TestCase):
         self.assertListEqual(songs, [])
     # END: TEST deezer_search
 
+    def test_deezer_download_favorites(self):
+        from deezer_downloader.web.music_backend import download_deezer_favorites
+        result = download_deezer_favorites("911902911", True, False,
+                                           informations=True, update=True)
+        self.assertIsInstance(result, list)
+        for song in result:
+            self.assertIsInstance(song, object)
+
     # BEGIN: TEST get_song_infos_from_deezer_website
     def test_get_track_infos_from_website(self):
         song = get_song_infos_from_deezer_website(TYPE_TRACK, "69962764")

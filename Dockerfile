@@ -19,6 +19,7 @@ RUN pip install deezer_downloader*.whl && \
     sed -i "s,.*command = /usr/bin/yt-dlp.*,command = $(which yt-dlp)," /etc/deezer-downloader.ini && \
     sed -i 's,host = 127.0.0.1,host = 0.0.0.0,' /etc/deezer-downloader.ini && \
     sed -i 's,/tmp/deezer-downloader,/mnt/deezer-downloader,' /etc/deezer-downloader.ini && \
+    sed -i '14i library=/mnt/itunes-library' /etc/deezer-downloader.ini && \
     rm deezer_downloader*.whl
 
 USER deezer
