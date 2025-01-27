@@ -78,7 +78,14 @@ class TestDeezerMethods(unittest.TestCase):
         for song in result:
             self.assertIsInstance(song, object)
 
-    # BEGIN: TEST get_song_infos_from_deezer_website
+    def test_get_deezer_user_playlists(self):
+        from deezer_downloader.web.music_backend import get_deezer_user_playlists
+        results = get_deezer_user_playlists("911902911")
+        # self.assertIsInstance(result, list)
+        print(results['TAB']['playlists']['data'][0].keys())
+        for result in results['TAB']['playlists']['data']:
+            print(result['TITLE'])
+
     def test_get_track_infos_from_website(self):
         song = get_song_infos_from_deezer_website(TYPE_TRACK, "69962764")
         self.assertIsInstance(song, dict)

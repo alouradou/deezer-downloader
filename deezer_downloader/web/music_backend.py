@@ -10,7 +10,7 @@ from deezer_downloader.youtubedl import youtubedl_download
 from deezer_downloader.spotify import get_songs_from_spotify_website
 from deezer_downloader.deezer import TYPE_TRACK, TYPE_ALBUM, TYPE_PLAYLIST, get_song_infos_from_deezer_website, \
     download_song, parse_deezer_playlist, deezer_search, get_deezer_favorites, download_deezer_playlist_informations, \
-    download_deezer_favorite_informations, load_deezer_json_informations
+    download_deezer_favorite_informations, load_deezer_json_informations, get_deezer_user_playlists_json
 from deezer_downloader.deezer import Deezer403Exception, Deezer404Exception
 
 from deezer_downloader.threadpool_queue import ThreadpoolScheduler, report_progress
@@ -258,18 +258,21 @@ def create_zip_file(songs_absolute_location):
 def create_m3u8_file(songs_absolute_location):
     playlist_directory, __ = os.path.split(songs_absolute_location[0])
     # 00 as prefix => will be shown as first in dir listing
-    m3u8_filename = "00 {}.m3u8".format(os.path.basename(playlist_directory))
+    m3u8_filename = "{}.m3u8".format(os.path.basename(playlist_directory))
     print("Creating m3u8 file: '{}'".format(m3u8_filename))
-    print("Playlist directory: '{}'".format(playlist_directory))
-    print("m3u8_filename: '{}'".format(m3u8_filename))
     m3u8_file_abs = os.path.join(playlist_directory, m3u8_filename)
-    print("m3u8_file_abs: '{}'".format(m3u8_file_abs))
     with open(m3u8_file_abs, "w") as f:
         for song in songs_absolute_location:
             f.write(basename(song) + "\n")
     # add m3u8_file so that will be zipped to
     songs_absolute_location.append(m3u8_file_abs)
     return songs_absolute_location
+
+
+@sched.register_command()
+def get_deezer_user_playlists(user_id: str):
+    playlists = get_deezer_user_playlists_json(user_id)
+    return playlists
 
 
 @sched.register_command()

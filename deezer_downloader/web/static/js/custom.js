@@ -122,6 +122,18 @@ $(document).ready(function() {
             });
     }
 
+    function get_deezer_user_playlists() {
+        $.post(deezer_downloader_api_root + '/favorites/deezer/playlists',
+            JSON.stringify({ user_id: $('#deezer-favorites-userid').val() }),
+            function(data) {
+                $("#results > tbody").html("");
+                for (var i = 0; i < data.length; i++) {
+                    document.getElementById("deezer-playlists").innerText = JSON.stringify(data[i]);
+                }
+            }
+        );
+    }
+
 
     function search(type) {
         deezer_load_list(type, $('#songs-albums-query').val());
@@ -140,7 +152,7 @@ $(document).ready(function() {
 
     function drawTableEntry(rowData, mtype) {
         var row = $("<tr>");
-        $("#results").append(row); 
+        $("#results").append(row);
         row.append($("<td>" + rowData.artist + "</td>"));
         row.append($("<td>" + rowData.title + "</td>"));
         
@@ -283,6 +295,10 @@ $(document).ready(function() {
 
     $("#deezer_favorites_update").click(function() {
         deezer_favorites_update(false);
+    });
+
+    $("#deezer_favorites_playlists").click(function() {
+       get_deezer_user_playlists();
     });
     // END DEEZER FAVORITE SONGS
 

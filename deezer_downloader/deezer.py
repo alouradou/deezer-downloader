@@ -405,6 +405,69 @@ def download_song(song, output_file, itunes_library=None):
         print("Download finished: {}".format(output_file))
 
 
+def get_deezer_user_playlists_json(user_id, output_file=None):
+    """
+    Récupère la liste des playlists d'un utilisateur Deezer.
+
+    Args:
+        user_id (str): ID de l'utilisateur ou URL du profil
+        output_file (str, optional): Chemin du fichier de sortie pour sauvegarder les données JSON
+
+    Returns:
+        dict: Les données des playlists de l'utilisateur
+
+    Raises:
+        DeezerApiException: En cas d'erreur avec l'API Deezer
+    """
+    try:
+        user_id = re.search(r'\d+', str(user_id)).group(0)
+    except AttributeError:
+        raise DeezerApiException("ERROR: Regex (\\d+) pour user_id a échoué. Valeur fournie: '{}'".format(user_id))
+
+    url_get_csrf_token = "https://www.deezer.com/ajax/gw-light.php?method=deezer.getUserData&input=3&api_version=1.0&api_token="
+    req = session.post(url_get_csrf_token)
+    csrf_token = req.json()['results']['checkForm']
+
+    url_get_playlists = "https://www.deezer.com/ajax/gw-light.php?method=deezer.pageProfile&input=3&api_version=1.0&api_token={}".format(
+        csrf_token)
+
+    headers = {
+        'Content-Type': 'text/plain;charset=UTF-8',
+        'Referer': f'https://www.deezer.com/us/profile/{user_id}/playlists',
+        'Origin': 'https://www.deezer.com',
+        'x-deezer-user': str(user_id)
+    }
+
+    data = {
+        'user_id': str(user_id),
+        'tab': 'playlists',
+        'nb': 10000
+    }
+
+    print(f"Téléchargement des playlists pour l'utilisateur {user_id}")
+
+    req = session.post(url_get_playlists, headers=headers, json=data)
+    req_json = req.json()
+
+    if 'error' in req_json and len(req_json['error']) > 0:
+        raise DeezerApiException(f"ERROR: L'API Deezer a retourné: {req_json['error']}")
+
+    playlists_data = req_json.get('results', {})
+
+    if 'TAB' in playlists_data and 'playlists' in playlists_data['TAB']:
+        nb_playlists = len(playlists_data['TAB']['playlists'])
+        print(f"Nombre de playlists trouvées: {nb_playlists}")
+    else:
+        print("Aucune playlist trouvée ou format de réponse inattendu")
+
+    if output_file:
+        with open(output_file, "w") as f:
+            print(f"Écriture des informations dans {output_file}")
+            json.dump(req_json, f, indent=4)
+
+    return playlists_data
+
+
 def download_deezer_playlist_informations(playlist_id, output_file):
     # downloads and decrypts the song from Deezer. Adds ID3 and art cover
     # playlist_id: id of the playlist or the url of it
