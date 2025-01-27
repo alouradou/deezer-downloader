@@ -78,8 +78,25 @@ def clean_filename(path):
     return ''.join([c for c in path if c not in array_of_special_characters])
 
 
+def create_hardlink_from_itunes(source_path, dest_path):
+    """Retrieve an audio file from Music Library via hardlink"""
+    try:
+        print(f"Creating link: {source_path} → {dest_path}")
+        os.link(source_path, dest_path)
+    except FileExistsError:
+        print(f"File {os.path.basename(dest_path)} already exists in the current directory!")
+    except Exception as e:
+        print(f"Error while creating link for {file_name}: {e}. Ignoring.")
+
+
 def download_song_and_get_absolute_filename(search_type, song, playlist_name=None):
-    itunes_library = config["download_dirs"]["itunes_library"] or None
+    if config["download_dirs"]["itunes_library"]:
+        itunes_path = config["download_dirs"]["itunes_library"]
+        itunes_library = itunes_path + "/Media.localized/Automatically Add to Music.localized"
+        media_music_path = itunes_path + "/Media.localized/Music"
+    else:
+        itunes_library = None
+        media_music_path = None
 
     if search_type == TYPE_ALBUM:
         song_filename = "{:02d} - {} {}.mp3".format(int(song['TRACK_NUMBER']),
@@ -89,6 +106,8 @@ def download_song_and_get_absolute_filename(search_type, song, playlist_name=Non
         song_filename = "{} - {}.mp3".format(song['ART_NAME'],
                                              song['SNG_TITLE'])
     song_filename = clean_filename(song_filename)
+
+    absolute_filename = ""
 
     if search_type == TYPE_TRACK:
         absolute_filename = os.path.join(config["download_dirs"]["songs"], song_filename)
@@ -107,13 +126,30 @@ def download_song_and_get_absolute_filename(search_type, song, playlist_name=Non
             os.mkdir(playlist_dir)
         absolute_filename = os.path.join(playlist_dir, song_filename)
 
-    if os.path.exists(absolute_filename):
+    itunes_song_path = None
+    if media_music_path:
+        artist_folder = clean_filename(song['ART_NAME'])
+        album_folder = clean_filename(song['ALB_TITLE'])
+        track_number = "{:02d}".format(int(song.get('TRACK_NUMBER', 0)))
+        disk_number = song.get('DISK_NUMBER', 1)
+        music_filename = f"{disk_number}-{track_number} {song['SNG_TITLE']}.mp3"
+        itunes_song_path = os.path.join(media_music_path, artist_folder, album_folder, music_filename)
+
+    if itunes_song_path and os.path.exists(itunes_song_path):
+        print(f"Skipping song '{itunes_song_path}'. Already exists in Music App.")
+        create_hardlink_from_itunes(itunes_song_path, absolute_filename)
+        return absolute_filename
+    elif os.path.exists(absolute_filename):
         print("Skipping song '{}'. Already exists.".format(absolute_filename))
+        return absolute_filename
     elif os.path.exists(absolute_filename.replace('.mp3', '.flac')):
         print("Skipping song '{}'. Already exists.".format(absolute_filename.replace('.mp3', '.flac')))
-    else:
-        print("Downloading '{}'".format(song_filename))
-        download_song(song, absolute_filename, itunes_library)
+        return absolute_filename
+
+    print("Downloading '{}'".format(song_filename))
+    download_song(song, absolute_filename, itunes_library)
+    print("Downloaded '{}'".format(absolute_filename))
+
     return absolute_filename
 
 
@@ -224,11 +260,13 @@ def create_m3u8_file(songs_absolute_location):
     # 00 as prefix => will be shown as first in dir listing
     m3u8_filename = "00 {}.m3u8".format(os.path.basename(playlist_directory))
     print("Creating m3u8 file: '{}'".format(m3u8_filename))
+    print("Playlist directory: '{}'".format(playlist_directory))
+    print("m3u8_filename: '{}'".format(m3u8_filename))
     m3u8_file_abs = os.path.join(playlist_directory, m3u8_filename)
+    print("m3u8_file_abs: '{}'".format(m3u8_file_abs))
     with open(m3u8_file_abs, "w") as f:
         for song in songs_absolute_location:
-            if os.path.exists(song):
-                f.write(basename(song) + "\n")
+            f.write(basename(song) + "\n")
     # add m3u8_file so that will be zipped to
     songs_absolute_location.append(m3u8_file_abs)
     return songs_absolute_location
