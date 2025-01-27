@@ -272,7 +272,7 @@ def create_m3u8_file(songs_absolute_location):
 @sched.register_command()
 def get_deezer_user_playlists(user_id: str):
     playlists = get_deezer_user_playlists_json(user_id)
-    return playlists
+    return playlists['TAB']['playlists']['data']
 
 
 @sched.register_command()

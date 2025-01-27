@@ -455,7 +455,7 @@ def get_deezer_user_playlists_json(user_id, output_file=None):
     playlists_data = req_json.get('results', {})
 
     if 'TAB' in playlists_data and 'playlists' in playlists_data['TAB']:
-        nb_playlists = len(playlists_data['TAB']['playlists'])
+        nb_playlists = len(playlists_data['TAB']['playlists']['data'])
         print(f"Nombre de playlists trouvées: {nb_playlists}")
     else:
         print("Aucune playlist trouvée ou format de réponse inattendu")

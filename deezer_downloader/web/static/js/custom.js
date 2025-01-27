@@ -127,9 +127,7 @@ $(document).ready(function() {
             JSON.stringify({ user_id: $('#deezer-favorites-userid').val() }),
             function(data) {
                 $("#results > tbody").html("");
-                for (var i = 0; i < data.length; i++) {
-                    document.getElementById("deezer-playlists").innerText = JSON.stringify(data[i]);
-                }
+                    document.getElementById("deezer-playlists").innerText = JSON.stringify(data);
             }
         );
     }

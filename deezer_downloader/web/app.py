@@ -9,7 +9,7 @@ from flask_autoindex import AutoIndex
 import giphypop
 
 from deezer_downloader.configuration import config
-from deezer_downloader.web.music_backend import sched
+from deezer_downloader.web.music_backend import sched, get_deezer_user_playlists
 from deezer_downloader.deezer import deezer_search, init_deezer_session
 
 app = Flask(__name__)
@@ -329,6 +329,5 @@ def get_user_playlists():
         json: [ { id, title } ]
     """
     user_input = request.get_json(force=True)
-    desc = "Getting informations on Deezer user playlists"
-    task = sched.enqueue_task(desc, "get_deezer_user_playlists", user_id=user_input['user_id'])
-    return jsonify({"task_id": id(task), })
+    results = get_deezer_user_playlists(user_id=user_input['user_id'])
+    return jsonify(results)
