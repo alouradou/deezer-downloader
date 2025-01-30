@@ -74,6 +74,31 @@ $(document).ready(function() {
             });
     }
 
+    function deezer_playlists_sync() {
+        const selectedPlaylists = document.querySelectorAll(".playlist-checkbox:checked");
+
+        if (selectedPlaylists.length === 0) {
+            alert("No playlist selected.");
+            return;
+        }
+
+        selectedPlaylists.forEach((checkbox) => {
+            const playlistId = checkbox.dataset.id;
+
+            $.post(deezer_downloader_api_root + '/playlist/deezer',
+            JSON.stringify({ playlist_url: playlistId,
+                             add_to_playlist: true,
+                             create_zip: false}),
+            function(data) {
+                console.log(data);
+                $.jGrowl("As you wish", { life: 4000 });
+            });
+        });
+
+        console.log(`${selectedPlaylists.length} playlists en cours de synchronisation.`);
+    }
+
+
     function deezer_playlist_update() {
         $.post(deezer_downloader_api_root + '/playlist/deezer/update',
             JSON.stringify({ playlist_url: $('#deezer-playlist-url').val() }),
@@ -127,8 +152,8 @@ $(document).ready(function() {
             JSON.stringify({ user_id: $('#deezer-playlists-userid').val() }),
             function(data) {
                 const tableBody = document.querySelector("#deezer-playlists-table > tbody");
-                tableBody.innerHTML = "";
-                tableBody.appendChild(drawPlaylists(data));
+                // tableBody.innerHTML = "";
+                drawPlaylists(data)
                 tableBody.addEventListener("change", function (event) {
                     console.log("Playlist checkbox changed:", event.target);
                     if (event.target.classList.contains("playlist-checkbox")) {
@@ -232,7 +257,8 @@ $(document).ready(function() {
     }
 
     function drawPlaylists(data) {
-        const tableBody = document.createElement("tbody");
+         const tableBody = document.querySelector("#deezer-playlists-table > tbody");
+         tableBody.innerHTML = "";
 
         for (let i = 0; i < data.length; i++) {
             tableBody.appendChild(drawPlaylistEntry(data[i]));
@@ -360,6 +386,10 @@ $(document).ready(function() {
     $("#deezer_favorites_playlists").click(function() {
        get_deezer_user_playlists();
     });
+
+    $("#deezer_playlists_sync").click(function () {
+        deezer_playlists_sync();
+    });
     // END DEEZER FAVORITE SONGS
 
 
@@ -430,5 +460,14 @@ $(document).ready(function() {
             
     };
 
+    const userIdInput = document.querySelector("#deezer-playlists-userid");
+    console.log("User ID input:", userIdInput);
 
+    // Vérifie s'il y a un User ID enregistré dans le localStorage
+    const savedUserId = localStorage.getItem("deezerUserId");
+    console.log("Saved User ID:", savedUserId);
+    if (savedUserId) {
+        userIdInput.value = savedUserId; // Remplit automatiquement l'input
+        get_deezer_user_playlists(); // Charge les playlists au démarrage
+    }
 });
