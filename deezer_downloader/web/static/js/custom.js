@@ -124,10 +124,17 @@ $(document).ready(function() {
 
     function get_deezer_user_playlists() {
         $.post(deezer_downloader_api_root + '/favorites/deezer/playlists',
-            JSON.stringify({ user_id: $('#deezer-favorites-userid').val() }),
+            JSON.stringify({ user_id: $('#deezer-playlists-userid').val() }),
             function(data) {
-                $("#results > tbody").html("");
-                    document.getElementById("deezer-playlists").innerText = JSON.stringify(data);
+                const tableBody = document.querySelector("#deezer-playlists-table > tbody");
+                tableBody.innerHTML = "";
+                tableBody.appendChild(drawPlaylists(data));
+                tableBody.addEventListener("change", function (event) {
+                    console.log("Playlist checkbox changed:", event.target);
+                    if (event.target.classList.contains("playlist-checkbox")) {
+                        saveSelectedPlaylists();
+                    }
+                });
             }
         );
     }
@@ -181,11 +188,66 @@ $(document).ready(function() {
         }
     }
 
+    function saveSelectedPlaylists() {
+        const checkboxes = document.querySelectorAll(".playlist-checkbox");
+        const selectedPlaylists = {};
+
+        checkboxes.forEach((checkbox) => {
+            if (checkbox.checked) {
+                selectedPlaylists[checkbox.dataset.id] = true;
+            }
+        });
+
+        localStorage.setItem("selectedPlaylists", JSON.stringify(selectedPlaylists));
+        console.log("Saved selected playlists:", selectedPlaylists);
+    }
+
+    function drawPlaylistEntry(rowData) {
+        const id = rowData['PLAYLIST_ID'];
+        const picture = "https://cdn-images.dzcdn.net/images/" + rowData['PICTURE_TYPE'] + "/" + rowData['PLAYLIST_PICTURE'] + "/528x528-000000-80-0-0.jpg"
+        const title = rowData['TITLE'];
+        const editor = rowData['PARENT_USERNAME'];
+        const lastUpdated = rowData['DATE_ADD'];
+        const n_tracks = rowData['NB_SONG'];
+        const deezerLink = "https://www.deezer.com/us/playlist/" + rowData['PLAYLIST_ID'];
+        const userLink = "https://www.deezer.com/us/profile/" + rowData['PARENT_USER_ID'];
+
+        // local storage for selected playlists
+        const selectedPlaylists = JSON.parse(localStorage.getItem("selectedPlaylists")) || {};
+        const isChecked = selectedPlaylists[id] ? "checked" : "";
+
+        const row = document.createElement("tr");
+
+        row.innerHTML = `
+            <td><input type="checkbox" class="playlist-checkbox" name="playlist" data-id="${id}" ${isChecked}></td>
+            <td><img src="${picture}" alt="Playlist Picture" style="width: 50px; height: 50px;"></td>
+            <td>${title}</td>
+            <td><a href="${userLink}" target="_blank">${editor}</a></td>
+            <td>${lastUpdated}</td>
+            <td>${n_tracks}</td>
+            <td><a href="${deezerLink}" target="_blank">View in Deezer</a></td>
+        `;
+
+        return row;
+    }
+
+    function drawPlaylists(data) {
+        const tableBody = document.createElement("tbody");
+
+        for (let i = 0; i < data.length; i++) {
+            tableBody.appendChild(drawPlaylistEntry(data[i]));
+        }
+
+        return tableBody;
+    }
+
+
+
     function show_debug_log() {
-        $.get(deezer_downloader_api_root + '/debug', function(data) {
+        $.get(deezer_downloader_api_root + '/debug', function (data) {
             var debug_log_textarea = $("#ta-debug-log");
             debug_log_textarea.val(data.debug_msg);
-            if(debug_log_textarea.length) {
+            if (debug_log_textarea.length) {
                 debug_log_textarea.scrollTop(debug_log_textarea[0].scrollHeight - debug_log_textarea.height());
             }
         });
@@ -367,4 +429,6 @@ $(document).ready(function() {
         }
             
     };
+
+
 });

@@ -54,13 +54,16 @@
       <a class="nav-link" id="nav-deezer" data-toggle="tab" href="#deezer">Deezer (4)</a>
     </li>
     <li class="nav-item">
-      <a class="nav-link" id="nav-file-downloads" href="downloads/" target="_blank" >Files (5)</a>
+      <a class="nav-link" id="nav-deezer-playlists" data-toggle="tab" href="#deezer-playlists">Playlists (5)</a>
     </li>
     <li class="nav-item">
-      <a class="nav-link" id="nav-debug-log" data-toggle="tab" href="#debug">Debug (6)</a>
+      <a class="nav-link" id="nav-file-downloads" href="downloads/" target="_blank" >Files (6)</a>
     </li>
     <li class="nav-item">
-      <a class="nav-link" id="nav-task-queue" data-toggle="tab" href="#queue">Queue (7)</a>
+      <a class="nav-link" id="nav-debug-log" data-toggle="tab" href="#debug">Debug (7)</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" id="nav-task-queue" data-toggle="tab" href="#queue">Queue (8)</a>
     </li>
   </ul>
   </div>   <!-- end row -->
@@ -164,7 +167,7 @@
        <br>
        <h3>Download Deezer favorite songs</h3>
        <div class="input-group">
-           <input type="text" class="form-control" id="deezer-favorites-userid" placeholder="user id of Deezer user"songs />
+           <input type="text" class="form-control" id="deezer-favorites-userid" placeholder="user id of Deezer user" />
            &nbsp;
        </div>
        <br>
@@ -175,25 +178,42 @@
                    <button type="button" class="btn btn-info" id="deezer_favorites_zip">Give me a zip</button>
                    <button type="button" class="btn btn-info" id="deezer_favorites_infos">Informations</button>
                    <button type="button" class="btn btn-info" id="deezer_favorites_update">Update existing playlist</button>
-                   <button type="button" class="btn btn-info" id="deezer_favorites_playlists">Get user playlists</button>
                    <button type="button" class="btn btn-info" onclick="$('#deezer-favorites-userid').val('')" >Clear</button>
                </span>
        </div>
+     </div> <!-- end div tab deezer playlists -->
 
-         <table id="deezer-playlists" class="table">
+     <div id="deezer-playlists" class="container tab-pane fade">
+       <br>
+       <h3>Select Deezer playlists to sync</h3>
+       <div class="input-group">
+           <label for="deezer-playlists-userid"></label><input type="text" class="form-control" id="deezer-playlists-userid" placeholder="user id of Deezer user" />
+           &nbsp;
+       </div>
+       <br>
+       <div class="input-group">
+               <span class="input-group-btn">
+                   <button type="button" class="btn btn-info" id="deezer_favorites_playlists">Get user playlists</button>
+                   <button type="button" class="btn btn-info" onclick="$('#deezer-playlists-userid').val('')" >Clear</button>
+               </span>
+       </div>
+         <br>
+         <table id="deezer-playlists-table" class="table">
              <thead>
              <tr>
-                 <th>Artist</th>
+                <th>Sync.</th>
+                 <th>Picture</th>
                  <th>Title</th>
-                 <th>Album</th>
-                 <th></th>
+                 <th>Editor</th>
+                 <th>Last Updated</th>
+                 <th>No. Tracks</th>
+                 <th>View in Deezer</th>
              </tr>
              </thead>
              <tbody>
              </tbody>
          </table>
-     </div> <!-- end div tab deezer playlists -->
-
+     </div> <!-- end div tab user deezer playlists -->
 
 
      <div id="debug" class="container tab-pane fade">
@@ -234,6 +254,56 @@
 
       </div>
     </footer>
+
+      <script>
+          // Load and use localStorage for playlist selection (5)
+            document.addEventListener("DOMContentLoaded", function () {
+                console.log("DOM fully loaded and parsed")
+                console.log("localStorage: ", localStorage)
+
+                // Load User ID for Deezer Favorites
+                const userIdInput = document.getElementById("deezer-playlists-userid");
+
+                if (localStorage.getItem("deezerUserId")) {
+                    userIdInput.value = localStorage.getItem("deezerUserId");
+                }
+
+                userIdInput.addEventListener("input", function () {
+                    localStorage.setItem("deezerUserId", userIdInput.value);
+                });
+
+                document.getElementById("deezer_favorites_playlists").nextElementSibling.addEventListener("click", function () {
+                    userIdInput.value = "";
+                    localStorage.removeItem("deezerUserId");
+                });
+
+
+                // Load selected playlists from localStorage
+                const tableBody = document.querySelector("#deezer-playlists-table > tbody");
+
+                function saveSelectedPlaylists() {
+                    const checkboxes = document.querySelectorAll(".playlist-checkbox");
+                    const selectedPlaylists = {};
+
+                    checkboxes.forEach((checkbox) => {
+                        if (checkbox.checked) {
+                            selectedPlaylists[checkbox.dataset.id] = true;
+                        }
+                    });
+
+                    localStorage.setItem("selectedPlaylists", JSON.stringify(selectedPlaylists));
+                }
+
+                function restoreSelectedPlaylists() {
+                    const selectedPlaylists = JSON.parse(localStorage.getItem("selectedPlaylists")) || {};
+                    document.querySelectorAll(".playlist-checkbox").forEach((checkbox) => {
+                        checkbox.checked = selectedPlaylists[checkbox.dataset.id] || false;
+                    });
+                }
+
+                restoreSelectedPlaylists();
+            });
+      </script>
 
 
 <style>
