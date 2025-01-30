@@ -313,9 +313,13 @@ def download_deezer_playlist_and_queue_and_zip(playlist_id, add_to_playlist, cre
                 return
     songs_absolute_location = []
     for i, song in enumerate(songs):
-        report_progress(i, len(songs))
-        absolute_filename = download_song_and_get_absolute_filename(TYPE_PLAYLIST, song, playlist_name)
-        songs_absolute_location.append(absolute_filename)
+        try:
+            report_progress(i, len(songs))
+            absolute_filename = download_song_and_get_absolute_filename(TYPE_PLAYLIST, song, playlist_name)
+            songs_absolute_location.append(absolute_filename)
+        except Exception as msg:
+            print(msg)
+            print(f"Could not find song ({song}) on Deezer?")
     update_mpd_db(songs_absolute_location, add_to_playlist)
     songs_with_m3u8_file = create_m3u8_file(songs_absolute_location)
     if create_zip:
