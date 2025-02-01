@@ -1,3 +1,4 @@
+import subprocess
 import time
 import os.path
 from os.path import basename
@@ -121,7 +122,8 @@ def download_song_and_get_absolute_filename(search_type, song, playlist_name=Non
     elif search_type == TYPE_PLAYLIST:
         assert type(playlist_name) == str
         playlist_name = clean_filename(playlist_name)
-        playlist_dir = os.path.join(config["download_dirs"]["playlists"], playlist_name)
+        ## With config: playlists = %(base)s/songs
+        playlist_dir = os.path.join(config["download_dirs"]["playlists"]) #, playlist_name)
         if not os.path.exists(playlist_dir):
             os.mkdir(playlist_dir)
         absolute_filename = os.path.join(playlist_dir, song_filename)
@@ -255,16 +257,17 @@ def create_zip_file(songs_absolute_location):
     return location_zip_file
 
 
-def create_m3u8_file(songs_absolute_location):
+def create_m3u8_file(songs_absolute_location, playlist_name: str):
     playlist_directory, __ = os.path.split(songs_absolute_location[0])
     # 00 as prefix => will be shown as first in dir listing
-    m3u8_filename = "{}.m3u8".format(os.path.basename(playlist_directory))
+    m3u8_filename = "{}.m3u8".format(playlist_name)
     print("Creating m3u8 file: '{}'".format(m3u8_filename))
     m3u8_file_abs = os.path.join(playlist_directory, m3u8_filename)
     with open(m3u8_file_abs, "w") as f:
         for song in songs_absolute_location:
             f.write(basename(song) + "\n")
     # add m3u8_file so that will be zipped to
+    subprocess.call(["open", m3u8_file_abs])
     songs_absolute_location.append(m3u8_file_abs)
     return songs_absolute_location
 
@@ -321,7 +324,7 @@ def download_deezer_playlist_and_queue_and_zip(playlist_id, add_to_playlist, cre
             print(msg)
             print(f"Could not find song ({song}) on Deezer?")
     update_mpd_db(songs_absolute_location, add_to_playlist)
-    songs_with_m3u8_file = create_m3u8_file(songs_absolute_location)
+    songs_with_m3u8_file = create_m3u8_file(songs_absolute_location, playlist_name)
     if create_zip:
         return [create_zip_file(songs_with_m3u8_file)]
     return make_song_paths_relative_to_mpd_root(songs_absolute_location)

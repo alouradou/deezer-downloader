@@ -419,10 +419,10 @@ def download_song(song, output_file, itunes_library=None):
         except requests.exceptions.RequestException as e:
             raise RuntimeError(f"Download failed: {e}")
 
-        if itunes_library:
-            add_to_itunes_with_hardlink(output_file, itunes_library)
-        else:
-            print("Music Library not found...", itunes_library)
+        # if itunes_library:
+        #     add_to_itunes_with_hardlink(output_file, itunes_library)
+        # else:
+        #     print("Music Library not found...", itunes_library)
 
     except Exception as e:
         raise
