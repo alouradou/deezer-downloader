@@ -101,6 +101,8 @@ def hexaescrypt(data, key):
 
 def genurlkey(songid, md5origin, mediaver=4, fmt=1):
     """ Calculate the deezer download url given the songid, origin and media+format """
+    print("[genurlkey] Trying to get URL for song with ID: {}".format(songid))
+    print(songid, md5origin, mediaver, fmt)
     data_concat = b'\xa4'.join(_ for _ in [md5origin.encode(),
                                            str(fmt).encode(),
                                            str(songid).encode(),
@@ -108,7 +110,30 @@ def genurlkey(songid, md5origin, mediaver=4, fmt=1):
     data = b'\xa4'.join([md5hex(data_concat), data_concat]) + b'\xa4'
     if len(data) % 16 != 0:
         data += b'\0' * (16 - len(data) % 16)
-    return hexaescrypt(data, "jo6aey6haid2Teih")
+    out = hexaescrypt(data, "jo6aey6haid2Teih")
+    print(type(out), out)
+    return out
+
+
+# def generateStreamPath(sng_id, md5, media_version, media_format):
+#     print("[generateStreamPath] Trying to get URL for song with ID: {}".format(sng_id))
+#     # From
+#     urlPart = b'\xa4'.join(
+#         [md5.encode(), str(media_format).encode(), str(sng_id).encode(), str(media_version).encode()])
+#     md5val = calcbfkey() # _md5(urlPart)
+#     step2 = md5val.encode() + b'\xa4' + urlPart + b'\xa4'
+#     step2 = step2 + (b'.' * (16 - (len(step2) % 16)))
+#     urlPart = hexaescrypt(step2, "jo6aey6haid2Teih") # _ecbCrypt('jo6aey6haid2Teih', step2)
+#     return urlPart
+
+
+def generateCryptedStreamURL(sng_id, md5, media_version, media_format):
+    print("[generateCryptedStreamURL] Trying to get URL for song with ID: {}".format(sng_id))
+    print(sng_id, md5, media_version, media_format)
+    urlPart = genurlkey(sng_id, md5, media_version, media_format)
+    out = "https://e-cdns-proxy-" + md5[0] + ".dzcdn.net/mobile/1/" + urlPart.decode()
+    print(out)
+    return out
 
 
 def calcbfkey(songid):
@@ -151,7 +176,6 @@ def decryptfile(fh, key, fo):
 
 
 def writeid3v1_1(fo, song):
-
     # Bugfix changed song["SNG_TITLE... to song.get("SNG_TITLE... to avoid 'key-error' in case the key does not exist
     def song_get(song, key):
         try:
@@ -195,7 +219,6 @@ def get_picture_link(pic_idid):
 
 
 def writeid3v2(fo, song):
-
     def make28bit(x):
         return ((x << 3) & 0x7F000000) | ((x << 2) & 0x7F0000) | (
                 (x << 1) & 0x7F00) | (x & 0x7F)
@@ -315,7 +338,7 @@ def writeid3v2(fo, song):
             ("TIT2", "SNG_TITLE"),
             # The 'Title/Songname/Content description' frame is the actual name of the piece (e.g. "Adagio", "Hurricane Donna").
             ("TSRC", "ISRC"),
-        # The 'ISRC' frame should contain the International Standard Recording Code (ISRC) (12 characters).
+            # The 'ISRC' frame should contain the International Standard Recording Code (ISRC) (12 characters).
         )
     ])
 
@@ -366,33 +389,35 @@ def download_song(song, output_file, itunes_library=None):
     if license_token and web_sound_quality.get('lossless'):
         song, url, extension = get_song_url(song)
     else:
-        song_quality = 3 if song.get("FILESIZE_MP3_320") and song.get("FILESIZE_MP3_320") != '0' else \
-            5 if song.get("FILESIZE_MP3_256") and song.get("FILESIZE_MP3_256") != '0' else \
-                1
-        urlkey = genurlkey(song["SNG_ID"], song["MD5_ORIGIN"], song["MEDIA_VERSION"], song_quality)
-        url = "https://e-cdns-proxy-%s.dzcdn.net/mobile/1/%s" % (song["MD5_ORIGIN"][0], urlkey.decode())
-        extension = 'mp3'
-    key = calcbfkey(song["SNG_ID"])
+        if song.get("FILESIZE_MP3_320") and song["FILESIZE_MP3_320"] != '0':
+            quality = 3
+        elif song.get("FILESIZE_MP3_256") and song["FILESIZE_MP3_256"] != '0':
+            quality = 5
+        else:
+            quality = 1
+
+        try:
+            song, url, extension = get_song_url(song, quality)
+        except Exception as e:
+            raise RuntimeError(f"Failed to get song URL: {e}")
+
     if not url:
         print("ERROR: Can not download this song. Failed to get url.")
         return output_file
+
+    key = calcbfkey(song["SNG_ID"])
     try:
-        fh = session.get(url)
-        if fh.status_code != 200:
-            # I don't why this happens. to reproduce:
-            # go to https://www.deezer.com/de/playlist/1180748301
-            # search for Moby
-            # open in a new tab the song Moby - Honey
-            # this will give you a 404!?
-            # but you can play the song in the browser
-            print("ERROR: Can not download this song. Got a {}".format(fh.status_code))
-            return output_file
         file_name = output_file.replace('.mp3', f'.{extension.lower()}')
-        with open(file_name, "w+b") as fo:
-            # add songcover and DL first 30 sec's that are unencrypted
-            writeid3v2(fo, song)
-            decryptfile(fh, key, fo)
-            writeid3v1_1(fo, song)
+        try:
+            with requests.get(url, stream=True) as response:
+                response.raise_for_status()
+                with open(file_name, "w+b") as fo:
+                    # Add song cover and first 30 seconds of unencrypted data
+                    writeid3v2(fo, song)
+                    decryptfile(response, key, fo)
+                    writeid3v1_1(fo, song)
+        except requests.exceptions.RequestException as e:
+            raise RuntimeError(f"Download failed: {e}")
 
         if itunes_library:
             add_to_itunes_with_hardlink(output_file, itunes_library)
@@ -483,7 +508,8 @@ def download_deezer_playlist_informations(playlist_id, output_file):
     req = session.post(url_get_csrf_token)
     csrf_token = req.json()['results']['checkForm']
 
-    url_get_playlist_songs = "https://www.deezer.com/ajax/gw-light.php?method=deezer.pagePlaylist&input=3&api_version=1.0&api_token={}".format(csrf_token)
+    url_get_playlist_songs = "https://www.deezer.com/ajax/gw-light.php?method=deezer.pagePlaylist&input=3&api_version=1.0&api_token={}".format(
+        csrf_token)
     data = {'playlist_id': int(playlist_id),
             'start': 0,
             'tab': 0,
@@ -703,45 +729,40 @@ def get_user_data():
         return False
 
 
-def get_song_url(song, i=0):
-    if i > 2:
-        raise ValueError("get song url attempts exceeded")
+def get_song_url(song, quality=3):
+    global license_token
 
-    if i == 1 and song.get('FALLBACK'):
-        song = song['FALLBACK']
+    if not song.get('TRACK_TOKEN'):
+        raise ValueError("Missing track token in song data.")
+
+    if not license_token:
+        raise ValueError("Missing license token.")
+
+    track_format = "MP3_320" if quality == 3 else "MP3_256" if quality == 5 else "MP3_128"
+
     try:
-        track_token = song['TRACK_TOKEN']
-        body = {
-            "license_token": license_token,
-            "media": [
-                {
-                    "type": "FULL",
-                    "formats": [
-                        {"cipher": "BF_CBC_STRIPE", "format": "FLAC"},
-                        {"cipher": "BF_CBC_STRIPE", "format": "MP3_320"},
-                        {"cipher": "BF_CBC_STRIPE", "format": "MP3_128"},
-                        {"cipher": "BF_CBC_STRIPE", "format": "MP3_64"},
-                        {"cipher": "BF_CBC_STRIPE", "format": "MP3_MISC"}
-                    ]
-                }
-            ],
-            "track_tokens": [track_token]
-        }
-        r = session.post("https://media.deezer.com/v1/get_url",
-                         data=json.dumps(body),
-                         headers={'accept-encoding': 'gzip, deflate, utf-8'})
-        data = r.json()
-        if not data['data'][0].get('media'):
-            print(data)
-            sleep((random.random() + 2 ** i))
-            return get_song_url(song, i + 1)
+        response = requests.post(
+            "https://media.deezer.com/v1/get_url",
+            json={
+                'license_token': license_token,
+                'media': [{
+                    'type': "FULL",
+                    'formats': [{'cipher': "BF_CBC_STRIPE", 'format': track_format}]
+                }],
+                'track_tokens': [song['TRACK_TOKEN']]
+            }
+        )
+        response.raise_for_status()
+        data = response.json()
+    except requests.exceptions.RequestException as e:
+        raise RuntimeError(f"Failed to retrieve song URL: {e}")
 
-        result = data['data'][0]['media'][0]
-        return (song, result['sources'][0]['url'], result['format'].split('_')[0])
-    except (Deezer403Exception, Deezer404Exception) as msg:
-        print(msg)
-        print("get song url is not working anymore.")
-        return song, False, 'mp3'
+    if not data.get('data') or 'errors' in data['data'][0]:
+        raise RuntimeError(f"Error in API response: {data}")
+
+    file_extension = ".mp3" if "mp3" in track_format.lower() else ".flac"
+
+    return song, data['data'][0]['media'][0]['sources'][0]['url'], file_extension
 
 
 def test_deezer_login():
