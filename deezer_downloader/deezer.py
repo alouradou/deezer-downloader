@@ -760,7 +760,7 @@ def get_song_url(song, quality=3):
     if not data.get('data') or 'errors' in data['data'][0]:
         raise RuntimeError(f"Error in API response: {data}")
 
-    file_extension = ".mp3" if "mp3" in track_format.lower() else ".flac"
+    file_extension = "mp3" if "mp3" in track_format.lower() else "flac"
 
     return song, data['data'][0]['media'][0]['sources'][0]['url'], file_extension
 
